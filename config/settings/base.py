@@ -70,6 +70,7 @@ THIRD_PARTY_APPS = [
 ]
 LOCAL_APPS = [
     'pay_demo.users.apps.UsersAppConfig',
+    'pay_demo.alipay.apps.AlipayConfig',
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
