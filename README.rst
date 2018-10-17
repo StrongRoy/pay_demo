@@ -1,7 +1,7 @@
 pay_demo
 ========
 
-a pay demo
+Call the demo of the mainstream payment interface
 
 .. image:: https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg
      :target: https://github.com/pydanny/cookiecutter-django/
