@@ -326,5 +326,6 @@ pay_demo/media/
 
 .pytest_cache/
 .env
-.envs/*
+.envs
 !.envs/.local/
+.idea
