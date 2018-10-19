@@ -9,9 +9,10 @@ DEBUG = True
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='vVSJI2nO8DCQn6N6PNifAzGAHmGlojZSVLkesHTslCzUpNe9rqfi0p5rpCffKHdb')
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = [
-    "localhost",
-    "0.0.0.0",
-    "127.0.0.1",
+    # "localhost",
+    # "0.0.0.0",
+    # "127.0.0.1",
+    "*"
 ]
 
 # CACHES
@@ -34,9 +35,18 @@ TEMPLATES[0]['OPTIONS']['debug'] = DEBUG  # noqa F405
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = env('DJANGO_EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-host
-EMAIL_HOST = 'localhost'
+EMAIL_HOST = env('MAIL_HOST', default='localhost')
+
+EMAIL_HOST_USER = env('MAIL_USER', default='')
+EMAIL_HOST_PASSWORD = env('MAIL_PWD', default='')
+# EMAIL_SUBJECT_PREFIX = env('MAIL_SUBJECT_PREFIX'+' ', default='[Django] ')
+EMAIL_USE_LOCALTIME = env('MAIL_USE_LOCALTIME', default=False)
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
-EMAIL_PORT = 1025
+EMAIL_PORT = env('MAIL_PORT', default=25)
+EMAIL_USE_TLS = env('MAIL_USE_TLS', default=False)
+EMAIL_USE_SSL = env('MAIL_USE_SSL', default=False)
+
+
 
 # django-debug-toolbar
 # ------------------------------------------------------------------------------
@@ -55,6 +65,7 @@ DEBUG_TOOLBAR_CONFIG = {
 INTERNAL_IPS = ['127.0.0.1', '10.0.2.2']
 if env('USE_DOCKER') == 'no':
     import socket
+
     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
     INTERNAL_IPS += [ip[:-1] + '1' for ip in ips]
 
@@ -70,3 +81,9 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 # Your stuff...
 # ------------------------------------------------------------------------------
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+}

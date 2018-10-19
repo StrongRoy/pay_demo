@@ -24,7 +24,7 @@ DEBUG = env.bool('DJANGO_DEBUG', False)
 # In Windows, this must be set to your system time zone.
 TIME_ZONE = 'Asia/Shanghai'
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'  # 中文支持，django1.8以后支持；1.8以前是zh-cn
 # https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
@@ -32,7 +32,7 @@ USE_I18N = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-l10n
 USE_L10N = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
-USE_TZ = True
+USE_TZ = False  # 默认是Ture，时间是utc时间，由于我们要用本地时间，所用手动修改为false！！！！
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -70,8 +70,7 @@ THIRD_PARTY_APPS = [
 ]
 LOCAL_APPS = [
     'pay_demo.users.apps.UsersAppConfig',
-    'pay_demo.alipay.apps.AlipayConfig',
-    'pay_demo.wechat_pay.apps.WechatPayConfig',
+    'pay_demo.trade.apps.TradeConfig',
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -216,7 +215,7 @@ EMAIL_BACKEND = env('DJANGO_EMAIL_BACKEND', default='django.core.mail.backends.s
 ADMIN_URL = 'admin/'
 # https://docs.djangoproject.com/en/dev/ref/settings/#admins
 ADMINS = [
-    ("""richiewen""", 'richiewen8@gamil.com'),
+    ("richiewen", 'richiewen8@gamil.com'),
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#managers
 MANAGERS = ADMINS
@@ -260,3 +259,10 @@ SOCIALACCOUNT_ADAPTER = 'pay_demo.users.adapters.SocialAccountAdapter'
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+#alipay config
+APP_PRIVATE_KEY = str(APPS_DIR.path('trade/keys/app_private_key.pem'))
+ALIPAY_PUBLIC_KEY = str(APPS_DIR.path('trade/keys/alipay_public_key.pem'))
+APPID = env('APPID', default='')
+APP_NOTIFY_URL = env('APPID', default='')
+RETURN_URL = env('RETURN_URL', default='')
