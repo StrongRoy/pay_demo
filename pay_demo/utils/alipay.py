@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # pip install pycryptodome
-__author__ = 'bobby'
 
 from datetime import datetime
 from Crypto.PublicKey import RSA
@@ -43,6 +42,15 @@ class AliPay(object):
     def get_gateway(self, url):
         return self.__gateway.format(data=url)
 
+    def get_mayifen(self, transaction_id, auth_token, **kwargs):
+        biz_content = {
+            "transaction_id": transaction_id,
+            "product_code": "w1010100100000000001",
+        }
+        biz_content.update(kwargs)
+        data = self.build_body("zhima.credit.score.get", biz_content, auth_token=auth_token)
+        return self.sign_data(data)
+
     def direct_pay(self, subject, out_trade_no, total_amount, return_url=None, **kwargs):
         biz_content = {
             "subject": subject,
@@ -56,7 +64,7 @@ class AliPay(object):
         data = self.build_body("alipay.trade.page.pay", biz_content, self.return_url)
         return self.sign_data(data)
 
-    def build_body(self, method, biz_content, return_url=None):
+    def build_body(self, method, biz_content, return_url=None,**kwargs):
         data = {
             "app_id": self.appid,
             "method": method,
@@ -66,6 +74,7 @@ class AliPay(object):
             "version": "1.0",
             "biz_content": biz_content
         }
+        data.update(kwargs)
 
         if return_url is not None:
             data["notify_url"] = self.app_notify_url
@@ -126,34 +135,48 @@ class AliPay(object):
         return self._verify(message, signature)
 
 
+class AlipayAuthorization:
+    """
+    沙箱环境 授权时使用商户账号进行授权，不要使用买家账号授权
+    """
+    def __init__(self, appid, redirect_uri,debug=False):
+        self.appid = appid
+        self.redirect_uri = redirect_uri
+        self.__gateway = ""
+
+        if debug is True:
+            self.__gateway = "https://openauth.alipaydev.com/oauth2/appToAppAuth.htm?{data}"
+        else:
+            self.__gateway = "https://openauth.alipay.com/oauth2/appToAppAuth.htm?{data}"
+
+    def get_gateway(self, url):
+        return self.__gateway.format(data=url)
+
+    def direct_get_url(self):
+        data = {
+            "app_id": self.appid,
+            "redirect_uri": self.redirect_uri,
+        }
+        return self.get_gateway(self.sign_data(data))
 
 
-if __name__ == "__main__":
-    return_url = 'http://127.0.0.1:8000/alipay/return/?charset=utf-8&out_trade_no=201702d02sss&method=alipay.trade.page.pay.return&total_amount=100.00&sign=YPHvePiyt75li%2FaKSmJr2DU892FhDal2%2Bui7u74e6Fwday%2BhJdL8kWahVXReLMkmqUgyIduH%2FRM7q%2FuXd6X6ydK2jWBrZWpVZDSlzDTEYBc1ZnbkA0%2FivXbEojWYal89hzw18jPC92BzjVT7lHRDZQCM0OxchDaYMNSf87UzHtjZYoBdFsriclpx46yfEUfQ1gIVKHF0OoEhEoz7ibVnU13SftXqW02G9ZOWaMQ1rbyqqrkTLU5soBfYiftTFZZ4CseJuRMIwU58ce7che%2B0x3oe8bPILkpecgR00nIagsTJwOc%2FoV6OhllRvSf2MaVPDZLrN6S6lOgm8PB%2BeouOaQ%3D%3D&trade_no=2018101922001488540200806266&auth_app_id=2016091100487106&version=1.0&app_id=2016091100487106&sign_type=RSA2&seller_id=2088102175161422&timestamp=2018-10-19+14%3A10%3A06'
-    o = urlparse(return_url)
-    query = parse_qs(o.query)
-    processed_query = {}
-    ali_sign = query.pop("sign")[0]
+    def sign_data(self, data):
+        # 排序后的字符串
+        unsigned_items = self.ordered_data(data)
+        quoted_string = "&".join("{0}={1}".format(k, quote_plus(v)) for k, v in unsigned_items)
+
+        return quoted_string
 
 
-    alipay = AliPay(
-        appid="",
-        app_notify_url="http://127.0.0.1:8000/alipay/return/",
-        app_private_key_path="../trade/keys/app_private_key.pem",
-        alipay_public_key_path="../trade/keys/alipay_public_key.pem",  # 支付宝的公钥，验证支付宝回传消息使用，不是你自己的公钥,
-        debug=True,  # 默认False,
-        return_url="http://127.0.0.1:8000/alipay/return/"
-    )
+    def ordered_data(self, data):
+        complex_keys = []
+        for key, value in data.items():
+            if isinstance(value, dict):
+                complex_keys.append(key)
 
-    for key, value in query.items():
-        processed_query[key] = value[0]
-    print (alipay.verify(processed_query, ali_sign))
-    url = alipay.direct_pay(
-        subject="测试订单2",
-        out_trade_no="201702002sss",
-        total_amount=100,
-        return_url="http://127.0.0.1:8000/alipay/return/"
-    )
-    re_url =alipay.get_gateway(url)
+        # 将字典类型的数据dump出来
+        for key in complex_keys:
+            data[key] = json.dumps(data[key], separators=(',', ':'))
 
-    print(re_url)
+        return sorted([(k, v) for k, v in data.items()])
+
