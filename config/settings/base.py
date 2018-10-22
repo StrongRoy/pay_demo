@@ -256,13 +256,25 @@ ACCOUNT_ADAPTER = 'pay_demo.users.adapters.AccountAdapter'
 # https://django-allauth.readthedocs.io/en/latest/configuration.html
 SOCIALACCOUNT_ADAPTER = 'pay_demo.users.adapters.SocialAccountAdapter'
 
-
 # Your stuff...
 # ------------------------------------------------------------------------------
 
-#alipay config
+# alipay config
 APP_PRIVATE_KEY = str(APPS_DIR.path('trade/keys/app_private_key.pem'))
 ALIPAY_PUBLIC_KEY = str(APPS_DIR.path('trade/keys/alipay_public_key.pem'))
 APPID = env('APPID', default='')
 APP_NOTIFY_URL = env('APPID', default='')
 RETURN_URL = env('RETURN_URL', default='')
+
+# wechat pay
+WXPAY_BASE_URL = env('WXPAY_BASE_URL', default='https://api.mch.weixin.qq.com')
+WXPAY_REQUEST_TIMEOUT = env('WXPAY_REQUEST_TIMEOUT', default=10)
+WX_APPID = env('WX_APPID', default='')
+WXPAY_SANDBOX = env('WXPAY_SANDBOX', default=False)
+WXPAY_MCHID = env('WXPAY_MCHID', default='')
+WXPAY_KEY = env('WXPAY_KEY', default='')  # 商户支付密钥Key。审核通过后，在微信发送的邮件中查看
+WXPAY_NOTIFY_URL = env('WXPAY_NOTIFY_URL', default='')
+WXPAY_APICLIENT_CERT_PATH = env('WXPAY_APICLIENT_CERT_PATH', default='')
+WXPAY_APICLIENT_KEY_PATH = env('WXPAY_APICLIENT_KEY_PATH', default='')
+WXPAY_SPBILL_CREATE_IP = env('SPBILL_CREATE_IP', default='')
+

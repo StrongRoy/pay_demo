@@ -11,6 +11,8 @@ from rest_framework import mixins, viewsets
 from .models import OrderInfo
 
 from .serializers import OrderSerializer
+from pay_demo.utils.wechat import WXPay
+from pay_demo.utils.utils import xml_to_dict
 
 
 class OrderViewset(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin,
@@ -171,7 +173,7 @@ class AlipayView(APIView):
             trade_no = processed_dict.get('trade_no', None)  # 该交易在支付宝系统中的交易流水号
             trade_status = processed_dict.get('trade_status', None)
 
-            existed_orders = OrderInfo.objects.filter(order_sn=order_sn)
+            existed_orders = OrderInfo.objects.filter(order_sn=order_sn,order_mount=processed_dict['total_amount'])
             for existed_order in existed_orders:
                 order_goods = existed_order.goods.all()
                 for order_good in order_goods:
@@ -187,3 +189,59 @@ class AlipayView(APIView):
 
 
 alipay_view = AlipayView.as_view()
+
+
+class WXPayView(APIView):
+    # 一部通知支付结果
+    def post(self,request):
+        processed_dict = {}
+        for key, value in request.POST.items():
+            processed_dict[key] = value
+        # 提取签名
+        wxpay = WXPay(
+            base_url=settings.WXPAY_BASE_URL,
+            request_timeout=settings.WXPAY_REQUEST_TIMEOUT,
+            appid=settings.WX_APPID,
+            mch_id=settings.WXPAY_MCHID,
+            pay_key=settings.WXPAY_KEY,
+            notify_url=settings.WXPAY_NOTIFY_URL,
+            apiclient_cert_path=settings.WXPAY_APICLIENT_CERT_PATH,
+            apiclient_key_path=settings.WXPAY_APICLIENT_KEY_PATH,
+
+        )
+
+        if wxpay.check_sign(processed_dict) is True:
+            # 验证金额
+            order_sn = processed_dict.get('out_trade_no', None)
+            trade_no = processed_dict.get('trade_no', None)  # 该交易在支付宝系统中的交易流水号
+            trade_status = processed_dict.get('trade_status', None)
+
+            existed_orders = OrderInfo.objects.filter(order_sn=order_sn, order_mount=processed_dict['total_fee'])
+
+            for existed_order in existed_orders:
+                order_goods = existed_order.goods.all()
+                for order_good in order_goods:
+                    goods = order_good.goods
+                    goods.sold_num += order_good.goods_num
+                    goods.save()
+                existed_order.pay_status = trade_status
+                existed_order.trade_no = trade_no
+                existed_order.pay_time = datetime.now()
+                existed_order.save()
+
+        # todo：提取签名、支付金额等，验证签名是否正确、金额是否正确
+        # 思路：在前面获取二维码时，生成了一条订单记录，订单应该保存下订单号、签名、金额等信息。在这里，根据回传的订单号查询数据库，得到对应的签名、金额进行验证即可
+
+
+        # 最后，别忘了应答微信支付平台，防止重复发送数据
+        return '''
+                    <xml>
+                    <return_code><![CDATA[SUCCESS]]></return_code>
+                    <return_msg><![CDATA[OK]]></return_msg>
+                    </xml>
+                    '''
+
+
+
+
+

@@ -3,7 +3,9 @@ import time
 from rest_framework import serializers
 from .models import OrderInfo
 from pay_demo.utils.alipay import AliPay
-from config.settings.local import ALIPAY_PUBLIC_KEY, APP_PRIVATE_KEY, APPID, APP_NOTIFY_URL, RETURN_URL, DEBUG
+from pay_demo.utils.wechat import WXPay
+
+from django.conf import settings
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -17,15 +19,16 @@ class OrderSerializer(serializers.ModelSerializer):
     pay_time = serializers.DateTimeField(read_only=True)
     seller_id = serializers.DateTimeField(read_only=True)
     alipay_url = serializers.SerializerMethodField(read_only=True)
+    wechat_url = ""
 
     def get_alipay_url(self, obj):
         alipay = AliPay(
-            appid=APPID,
-            app_notify_url=APP_NOTIFY_URL,
-            app_private_key_path=APP_PRIVATE_KEY,
-            alipay_public_key_path=ALIPAY_PUBLIC_KEY,  # 支付宝的公钥，验证支付宝回传消息使用，不是你自己的公钥,
-            debug=DEBUG,  # 默认False,
-            return_url=RETURN_URL
+            appid=settings.APPID,
+            app_notify_url=settings.APP_NOTIFY_URL,
+            app_private_key_path=settings.APP_PRIVATE_KEY,
+            alipay_public_key_path=settings.ALIPAY_PUBLIC_KEY,  # 支付宝的公钥，验证支付宝回传消息使用，不是你自己的公钥,
+            debug=settings.DEBUG,  # 默认False,
+            return_url=settings.RETURN_URL
         )
 
         url = alipay.direct_pay(
@@ -34,6 +37,31 @@ class OrderSerializer(serializers.ModelSerializer):
             total_amount=obj.order_mount,
         )
         re_url = alipay.get_gateway(url)
+
+        return re_url
+
+    def get_wechat_url(self, obj):
+        wxpay = WXPay(
+            base_url=settings.WXPAY_BASE_URL,
+            request_timeout=settings.WXPAY_REQUEST_TIMEOUT,
+            appid=settings.WX_APPID,
+            mch_id=settings.WXPAY_MCHID,
+            pay_key=settings.WXPAY_KEY,
+            notify_url=settings.WXPAY_NOTIFY_URL,
+            apiclient_cert_path=settings.WXPAY_APICLIENT_CERT_PATH,
+            apiclient_key_path=settings.WXPAY_APICLIENT_KEY_PATH,
+
+        )
+
+        data = wxpay.unified_order(
+            out_trade_no=obj.order_sn,
+            total_fee=obj.order_mount,
+            body=obj.post_script,
+            expire_seconds=2 * 60,
+        )
+
+        # 生成二维码
+
 
         return re_url
 
